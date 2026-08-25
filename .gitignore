@@ -1,0 +1,62 @@
+# =========================================
+# Secrets & credentials
+# =========================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+**/credentials.json
+**/*_token.json
+
+# =========================================
+# Python (backend)
+# =========================================
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+build/
+dist/
+
+# Testing / type-checking
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# =========================================
+# Node / React / Vite (frontend)
+# =========================================
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+*.local
+
+# =========================================
+# Databases / local runtime artifacts
+# =========================================
+*.sqlite3
+*.db
+*.rdb
+dump.rdb
+*.log
+logs/
+
+# =========================================
+# OS / editor
+# =========================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# =========================================
+# Docker (if used)
+# =========================================
+docker-compose.override.yml
