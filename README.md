@@ -83,12 +83,29 @@ Every node is `{ type, props, children? }`. Because `children` is itself a list 
 
 ## Prompt design
 
-A few deliberate choices keep model output reliable enough to render:
+Technique names follow the [Prompt Engineering Guide](https://www.promptingguide.ai/techniques).
 
-- **Schema in the prompt.** The system prompt describes the exact JSON contract, so the model generates against a known shape instead of inventing one.
-- **Few-shot examples.** One worked example per flow (comparison, form, summary) anchors both structure *and* visual quality.
-- **JSON-only output.** The model is instructed to return a single JSON object and nothing else, which makes extraction and validation deterministic.
-- **Validation as a safety net, not a hope.** The schema — not the prompt — is the real guarantee. Anything that doesn't validate becomes a fallback, so a bad generation degrades instead of breaking.
+- **Contract-first.** The system prompt embeds the exact A2UI JSON schema — every
+  component type, its props, and enum values — so the model generates against a
+  known shape instead of inventing one.
+
+- **Few-shot prompting.** One `user message → A2UI JSON` example per flow
+  (comparison card, preference form, allocation summary) anchors both valid
+  structure and visual quality.
+
+- **The model decides the component.** The prompt frames the job as "choose the
+  right interface" (compare → card, needs input → form, has the user's data →
+  summary). The intent→UI mapping lives in the model, not hardcoded Python.
+
+- **JSON-only output.** One JSON object, no prose or markdown fences —
+  deterministic output for deterministic parsing.
+
+- **The prompt hints; the schema guarantees.** Output is validated server-side
+  against the Pydantic schema; anything that fails becomes a graceful fallback.
+
+**Techniques used elsewhere:** prompt chaining for the multi-agent pipeline
+(Intent → Data → UI Generator), and ReAct for the tool-calling path
+(reason → act → observe → respond).
 
 ## Tech stack
 
