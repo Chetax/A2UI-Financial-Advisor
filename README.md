@@ -149,6 +149,32 @@ A2UI-Financial-Advisor/
 ├── frontend/                # React + TypeScript renderer
 └── README.md
 ```
+## Status
+
+**Backend — done and verified end-to-end.** All three flows run on a live
+Bedrock model (no mocks, no hardcoded responses):
+
+| Flow | Input | Output | Status |
+| --- | --- | --- | --- |
+| Data display | "Compare RELIANCE and TCS" | comparison `card` | Done |
+| Form interaction | "invest Rs.50,000" | preference `form` (prefilled) | Done |
+| Personalised summary | submitted form payload | tailored allocation `card` | Done |
+
+Underneath: the model **chooses** the component per intent, conversation
+**memory** carries context across turns, and malformed model output **falls back**
+to a safe component instead of reaching the browser.
+
+Built and proven this far:
+- `schema.py` — A2UI contract (discriminated union, recursive)
+- `prompts.py` — system prompt + few-shot examples
+- `llm.py` — Bedrock Converse streaming client
+- `validation.py` — parse + validate + graceful fallback (the trust boundary)
+- `memory.py` — per-session conversation store
+- `main.py` — FastAPI SSE `/chat` endpoint wiring the full turn
+
+**Next — frontend.** The React/TypeScript renderer that mounts this A2UI JSON as
+live, interactive components: recursive rendering of all 6 types, controlled form
+state, and an SSE client that sends button/form payloads back to `/chat`.
 
 ## Roadmap
 
@@ -157,4 +183,6 @@ A2UI-Financial-Advisor/
 - Tool calling — live stock prices / market data folded into the generated UI.
 - Redis-backed memory for horizontal scale.
 - Partial-JSON streaming so the UI paints as the component arrives, not just after.
-
+- Partial-JSON streaming so the UI paints as the component arrives. The current
+  build deliberately collects the full stream server-side and validates before
+  emitting one clean event — this is the planned next step past that.
