@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator, List,Optional
 from app.validation import _fallback, parse_a2ui
 
 from fastapi import FastAPI
@@ -50,11 +50,14 @@ class ChatRequest(BaseModel):
     """
     The POST /chat body.
 
-    session_id: which conversation this turn belongs to (memory key).
-    message:    the user's new message for this turn.
+    Either `message` (free text) or `action_id` (a button/form fired) is
+    present — never neither. `action_payload` carries form field values or
+    a button's static payload, keyed the same way schema.Action expects.
     """
     session_id: str
-    message: str
+    message: Optional[str] = None
+    action_id: Optional[str] = None
+    action_payload: Optional[dict] = None
 
 
 def _sse(data: str) -> str:
@@ -66,6 +69,26 @@ def _sse(data: str) -> str:
     """
     return f"data: {data}\n\n"
 
+def _describe_turn(req: ChatRequest) -> str:
+    """
+    Collapse a ChatRequest into the single text string the rest of the
+    pipeline (build_messages, memory) already expects.
+
+    - if req.message is set: return it as-is (existing behavior, untouched)
+    - else: render req.action_id + req.action_payload into a short,
+      deterministic sentence the model can act on, e.g.
+      'User submitted action "suggest_allocation" with data: {"amount": "50000"}'
+
+    Keep the format consistent -- the model's few-shot examples don't need
+    to change if this reads like something a user 'said'.
+    """
+    if req.message is not None:
+        return req.message
+    if req.action_payload is None:
+        return f'User submitted action "{req.action_id}"'
+    payload_str = json.dumps(req.action_payload)
+    
+    return f'User submitted action "{req.action_id}" with data: {payload_str}'
 
 
 def _run_turn(session_id: str, user_message: str) -> Iterator[str]:
@@ -112,7 +135,8 @@ def chat(req: ChatRequest) -> StreamingResponse:
     Return a StreamingResponse whose first arg is the _run_turn(...) generator
     and whose media_type is "text/event-stream".
     """
+    user_text = _describe_turn(req)
     return StreamingResponse(
-    _run_turn(req.session_id, req.message),
+    _run_turn(req.session_id, user_text),
     media_type="text/event-stream",
 )
