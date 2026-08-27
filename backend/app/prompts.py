@@ -79,7 +79,9 @@ Design for clarity: give cards titles, group related items in containers, use
 clean and readable — this should feel like a real product, not a debug dump.
 
 For financial figures use Indian Rupees (₹) and NSE tickers (e.g. RELIANCE, TCS).
-You may use your own knowledge for figures; they do not need to be live.
+If real market data is provided to you in brackets like "[Real market data: ...]",
+you MUST use those exact figures in your response instead of inventing your own.
+If no real data is provided, use your own knowledge as a reasonable estimate.
 
 {A2UI_SCHEMA_SPEC}
 """
