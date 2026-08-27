@@ -20,6 +20,7 @@ import json
 import logging
 from typing import Any, Dict, Iterator, List,Optional
 from app.validation import _fallback, parse_a2ui
+from app.tools import get_multiple, extract_tickers
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -113,7 +114,19 @@ def _run_turn(session_id: str, user_message: str) -> Iterator[str]:
     event, but the generator shape means you *could* emit many later.
     """
     history = memory.get_history(session_id)
-    payload = build_messages(history, user_message)
+    tickers = extract_tickers(user_message)
+    augmented_message = user_message
+    if len(tickers) >= 2:
+        stock_data = get_multiple(tickers)
+        real_data = [d for d in stock_data if "error" not in d]
+        if real_data:
+            data_str = json.dumps(real_data, ensure_ascii=False)
+            augmented_message = (
+                f"{user_message}\n\n"
+                f"[Real market data, use these exact figures instead of your own knowledge: {data_str}]"
+            )
+
+    payload = build_messages(history, augmented_message)
     try:
         raw = "".join(stream_completion(payload["system"], payload["messages"]))
     except BedrockError as exc:

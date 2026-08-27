@@ -109,8 +109,8 @@ Technique names follow the [Prompt Engineering Guide](https://www.promptingguide
 
 ## Tech stack
 
-**Backend:** Python, FastAPI, Pydantic v2, boto3 (AWS Bedrock Converse API), Server-Sent Events
-**Frontend:** React 18, TypeScript, Vite
+**Backend:** Python, FastAPI, Pydantic v2, boto3 (AWS Bedrock Converse API), yfinance, Server-Sent Events
+**Frontend:** React 18, TypeScript, Vite, Tailwind CSS v4
 **Model:** any Bedrock-hosted foundation model (configurable via env)
 
 ## Getting started
@@ -143,46 +143,68 @@ A2UI-Financial-Advisor/
 │   │   ├── llm.py           # Bedrock Converse streaming client
 │   │   ├── validation.py    # parse + validate + fallback
 │   │   ├── memory.py        # per-session conversation store
+│   │   ├── tools.py         # yfinance tool-calling (real market data)
 │   │   └── main.py          # FastAPI app + SSE endpoint
 │   ├── requirements.txt
 │   └── .env.example
-├── frontend/                # React + TypeScript renderer
+├── frontend/
+│   ├── src/
+│   │   ├── a2ui/
+│   │   │   ├── types.ts       # TS mirror of schema.py
+│   │   │   ├── Renderer.tsx   # recursive A2UI renderer
+│   │   │   └── FormContext.tsx
+│   │   ├── components/        # Text, Button, TextField, Container, Card, Form
+│   │   ├── api/
+│   │   │   └── chat.ts        # SSE-over-fetch client
+│   │   └── App.tsx            # chat shell
+│   └── package.json
 └── README.md
 ```
+
 ## Status
 
-**Backend — done and verified end-to-end.** All three flows run on a live
-Bedrock model (no mocks, no hardcoded responses):
+**Full stack — done and verified end-to-end**, including a live frontend and
+real market data (no mocks, no hardcoded responses anywhere):
 
 | Flow | Input | Output | Status |
 | --- | --- | --- | --- |
-| Data display | "Compare RELIANCE and TCS" | comparison `card` | Done |
-| Form interaction | "invest Rs.50,000" | preference `form` (prefilled) | Done |
+| Data display | "Compare RELIANCE and TCS" | comparison `card`, real yfinance data | Done |
+| Form interaction | "invest ₹50,000" | preference `form` (prefilled) | Done |
 | Personalised summary | submitted form payload | tailored allocation `card` | Done |
 
 Underneath: the model **chooses** the component per intent, conversation
-**memory** carries context across turns, and malformed model output **falls back**
-to a safe component instead of reaching the browser.
+**memory** carries context across turns, malformed model output **falls back**
+to a safe component instead of reaching the browser, and comparison requests
+are backed by **real market data** rather than model-invented figures.
 
-Built and proven this far:
+**Backend:**
 - `schema.py` — A2UI contract (discriminated union, recursive)
 - `prompts.py` — system prompt + few-shot examples
 - `llm.py` — Bedrock Converse streaming client
 - `validation.py` — parse + validate + graceful fallback (the trust boundary)
 - `memory.py` — per-session conversation store
-- `main.py` — FastAPI SSE `/chat` endpoint wiring the full turn
+- `tools.py` — yfinance tool-calling: real market cap / P/E / sector, ReAct
+  pattern (detect tickers -> fetch -> inject into prompt), fails soft
+- `main.py` — FastAPI SSE `/chat` endpoint wiring the full turn, including
+  the tool-calling step
 
-**Next — frontend.** The React/TypeScript renderer that mounts this A2UI JSON as
-live, interactive components: recursive rendering of all 6 types, controlled form
-state, and an SSE client that sends button/form payloads back to `/chat`.
+**Frontend:**
+- `a2ui/types.ts` — TypeScript mirror of `schema.py`, no `any` on core types
+- `a2ui/Renderer.tsx` — one recursive component rendering all 6 A2UI types
+- `a2ui/FormContext.tsx` — shares form state with nested `text-field`s at any
+  depth, so a `form` doesn't need its fields to be direct children
+- `components/` — Text, Button, TextField, Container, Card, Form
+- `api/chat.ts` — SSE-over-fetch client (`EventSource` is GET-only; `/chat`
+  is POST, so this reads the stream manually via `ReadableStream`)
+- `App.tsx` — chat shell with persistent message history, real session id,
+  button/form actions looped back into `/chat` as the next turn
 
 ## Roadmap
 
 - Validator + retry loop — a second model pass checks the A2UI JSON and feeds errors back for one retry before falling back.
 - Richer components — `select`, `data-table`, `badge`, inline charts.
-- Tool calling — live stock prices / market data folded into the generated UI.
 - Redis-backed memory for horizontal scale.
-- Partial-JSON streaming so the UI paints as the component arrives, not just after.
-- Partial-JSON streaming so the UI paints as the component arrives. The current
-  build deliberately collects the full stream server-side and validates before
-  emitting one clean event — this is the planned next step past that.
+- Partial-JSON streaming so the UI paints as the component arrives, not just
+  after the full response is collected — the current build deliberately
+  collects the full stream server-side and validates before emitting one
+  clean event; this is the planned next step past that.
