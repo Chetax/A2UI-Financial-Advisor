@@ -25,7 +25,7 @@ export function Form({ submitLabel, action, children, onSubmit }: FormComponentP
         {children}
         <button
           type="submit"
-          className="self-start px-5 py-2.5 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 active:scale-[0.98] transition-all shadow-sm"
+          className="self-start px-5 py-2.5 rounded-lg bg-gold text-ink font-semibold text-sm hover:brightness-95 active:scale-[0.98] transition-all"
         >
           {submitLabel}
         </button>

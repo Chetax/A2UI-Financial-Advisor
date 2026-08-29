@@ -9,7 +9,7 @@ export function TextField({
 }: TextFieldComponentProps) {
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      <label htmlFor={name} className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+      <label htmlFor={name} className="text-xs font-medium uppercase tracking-wider text-muted">
         {label}
       </label>
       <input
@@ -19,7 +19,7 @@ export function TextField({
         placeholder={placeholder}
         value={value ?? ''}
         onChange={(e) => onChange?.(name, e.target.value)}
-        className="border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+        className="bg-ink border border-hairline rounded-lg px-3.5 py-2.5 text-sm text-inkText placeholder:text-muted font-mono focus:outline-none focus:ring-2 focus:ring-gold focus:border-gold transition-colors"
       />
     </div>
   );

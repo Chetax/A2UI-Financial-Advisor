@@ -12,12 +12,12 @@ const variantTag: Record<TextProps['variant'], keyof JSX.IntrinsicElements> = {
 };
 
 const variantClass: Record<TextProps['variant'], string> = {
-  heading: 'text-2xl font-bold text-gray-900',
-  subheading: 'text-lg font-semibold text-gray-800',
-  body: 'text-base text-gray-700',
-  caption: 'text-sm text-gray-500',
-  metric: 'text-3xl font-bold text-blue-600',
-  label: 'text-xs font-medium uppercase tracking-wide text-gray-500',
+  heading: 'font-serif text-2xl text-inkText',
+  subheading: 'font-serif text-lg text-inkText',
+  body: 'text-base text-inkText',
+  caption: 'text-sm text-muted',
+  metric: 'font-mono text-3xl text-gold',
+  label: 'text-xs font-medium uppercase tracking-wider text-muted',
 };
 
 export function Text({ content, variant }: TextProps) {

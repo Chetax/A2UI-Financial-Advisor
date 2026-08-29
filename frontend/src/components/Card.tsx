@@ -6,9 +6,10 @@ interface CardComponentProps extends CardProps {
 
 export function Card({ title, subtitle, children }: CardComponentProps) {
   return (
-    <div className="rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-shadow p-6 bg-white">
-      {title && <h3 className="text-xl font-semibold text-gray-900">{title}</h3>}
-      {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+    <div className="rounded-xl border border-hairline bg-surface p-6">
+      {title && <h3 className="font-serif text-xl text-inkText">{title}</h3>}
+      {subtitle && <p className="text-sm text-muted mt-1">{subtitle}</p>}
+      {title && <div className="mt-3 h-0.5 w-8 bg-gold" />}
       <div className="mt-4 flex flex-col gap-3 items-start">{children}</div>
     </div>
   );

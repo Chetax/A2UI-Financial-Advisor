@@ -1,1 +1,16 @@
 @import "tailwindcss";
+@theme {
+  --color-ink: #0B0E14;        /* page base */
+  --color-surface: #141922;    /* cards, elevated */
+  --color-hairline: #232B38;   /* borders / rules */
+  --color-inkText: #E8EAED;    /* primary text */
+  --color-muted: #8B94A3;      /* labels, captions */
+  --color-gold: #C9A96A;       /* the one accent */
+  --color-gain: #4ADE80;       /* positive numbers */
+  --color-loss: #F87171;       /* negative numbers */
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-inkText);
+}
