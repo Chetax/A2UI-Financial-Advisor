@@ -22,14 +22,25 @@ logger = logging.getLogger(__name__)
 
 _FALLBACK_MESSAGE = "Sorry, I couldn't put that together just now. Mind rephrasing?"
 
-def _fallback(message:str=_FALLBACK_MESSAGE) -> A2UIResponse:
+
+def _try_parse(raw: str) -> A2UIResponse:
+    """
+    Same three steps as parse_a2ui — extract, json.loads, validate — but NOT
+    total: on failure it lets the original exception (ValueError from
+    _extract_json, json.JSONDecodeError, or pydantic.ValidationError)
+    propagate as-is, instead of falling back.
+
+    main.py's retry loop calls this directly when it needs to know *why*
+    something failed (str(exc)), not just that it failed.
+    """
+    extracted = _extract_json(raw)
+    data = json.loads(extracted)
+    return A2UIResponse.model_validate(data)
+
+
+def _fallback(message: str = _FALLBACK_MESSAGE) -> A2UIResponse:
     """
     Build a guaranteed-valid A2UIResponse to return when parsing/validation fails.
-
-    Must be the simplest valid thing your schema allows: a single `text`
-    component wrapped in an A2UIResponse. Look at TextComponent / TextProps in
-    schema.py for exactly what's required.
-
     This function must NOT itself be able to fail — no model output touches it,
     it only uses values you control.
     """
@@ -40,6 +51,7 @@ def _fallback(message:str=_FALLBACK_MESSAGE) -> A2UIResponse:
             props=TextProps(content=message),
         ),
     )
+
 
 def _extract_json(raw: str) -> str:
     """
@@ -54,36 +66,23 @@ def _extract_json(raw: str) -> str:
 
     Raises: ValueError if no plausible JSON object can be located at all.
     """
+    start = raw.find("{")
+    end = raw.rfind("}")
 
-    start=raw.find("{")
-    end=raw.rfind("}")
-
-    if start==-1 or end==-1 or end < start:
+    if start == -1 or end == -1 or end < start:
         raise ValueError("no JSON object found")
 
     return raw[start : end + 1]
-    
-
 
 
 def parse_a2ui(raw: str) -> A2UIResponse:
     """
     The public entry point. Total function: never raises.
-
-    Pipeline:
-      1. extract  — _extract_json(raw)
-      2. parse    — json.loads(...)
-      3. validate — A2UIResponse.model_validate(...)
-    Any step failing -> log the raw output at warning level, return _fallback().
-
-    Returns a trusted A2UIResponse either way.
+    Any step in _try_parse failing -> log the raw output at warning level,
+    return _fallback().
     """
     try:
-        extracted = _extract_json(raw)
-        data = json.loads(extracted)
-        return A2UIResponse.model_validate(data)
-    except (ValueError, json.JSONDecodeError, ValidationError) as exc:
+        return _try_parse(raw)
+    except (ValueError, ValidationError) as exc:
         logger.warning("A2UI parse failed, using fallback. raw=%r  err=%s", raw, exc)
         return _fallback()
-
-
