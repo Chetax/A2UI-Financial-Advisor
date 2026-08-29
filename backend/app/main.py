@@ -18,9 +18,10 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, Iterator, List,Optional
-from app.validation import _fallback, parse_a2ui
+from typing import  Iterator,Optional
 from app.tools import get_multiple, extract_tickers
+from app.validation import _try_parse, _fallback
+from pydantic import ValidationError
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,7 +31,7 @@ from pydantic import BaseModel
 from app.llm import BedrockError, stream_completion
 from app.memory import MemoryStore
 from app.prompts import build_messages
-from app.validation import parse_a2ui
+
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +135,21 @@ def _run_turn(session_id: str, user_message: str) -> Iterator[str]:
         yield _sse(_fallback().model_dump_json())
         return
 
-    response = parse_a2ui(raw)
+    try:
+        response = _try_parse(raw)
+    except (ValueError, ValidationError) as exc:
+        logger.warning("A2UI invalid, retrying once: %s", exc)
+        retry_messages = payload["messages"] + [
+            {"role": "assistant", "content": [{"text": raw}]},
+            {"role": "user", "content": [{"text": f"That JSON was invalid: {exc}. Return corrected JSON only."}]},
+        ]
+        try:
+            raw2 = "".join(stream_completion(payload["system"], retry_messages))
+            response = _try_parse(raw2)
+        except (BedrockError, ValueError, ValidationError) as exc2:
+            logger.warning("Retry also failed: %s", exc2)
+            response = _fallback()
+
     memory.append(session_id, {"role": "user", "content": [{"text": user_message}]})
     memory.append(session_id, {"role": "assistant", "content": [{"text": response.model_dump_json()}]})
     yield _sse(response.model_dump_json())

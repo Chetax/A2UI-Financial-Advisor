@@ -15,6 +15,7 @@ from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 
 from app.config import get_settings
+from app.retry import with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ _settings = get_settings()
 _client = boto3.client(
     "bedrock-runtime",
     region_name=_settings.aws_region,
-    config=BotoConfig(retries={"max_attempts": 2, "mode": "standard"}),
+    config=BotoConfig(retries={"max_attempts": 1, "mode": "standard"}),
 )
 
 
@@ -76,4 +77,7 @@ def collect_completion(
     messages: List[Dict[str, Any]],
 ) -> str:
     """Convenience: drain the stream into a single string (non-streaming callers)."""
-    return "".join(stream_completion(system, messages))
+    def _run() -> str:
+        return "".join(stream_completion(system, messages))
+
+    return with_retry((BedrockError,))(_run)()

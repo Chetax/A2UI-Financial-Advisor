@@ -1,7 +1,7 @@
 // src/api/chat.ts
 import type { A2UIResponse, ChatRequest } from '../a2ui/types';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export async function sendChatMessage(
   req: ChatRequest

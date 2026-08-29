@@ -174,8 +174,10 @@ real market data (no mocks, no hardcoded responses anywhere):
 
 Underneath: the model **chooses** the component per intent, conversation
 **memory** carries context across turns, malformed model output **falls back**
-to a safe component instead of reaching the browser, and comparison requests
-are backed by **real market data** rather than model-invented figures.
+to a safe component instead of reaching the browser, a **validator + retry
+loop** feeds schema errors back to the model for one correction pass before
+that fallback, and comparison requests are backed by **real market data**
+rather than model-invented figures.
 
 **Backend:**
 - `schema.py` — A2UI contract (discriminated union, recursive)
@@ -186,7 +188,15 @@ are backed by **real market data** rather than model-invented figures.
 - `tools.py` — yfinance tool-calling: real market cap / P/E / sector, ReAct
   pattern (detect tickers -> fetch -> inject into prompt), fails soft
 - `main.py` — FastAPI SSE `/chat` endpoint wiring the full turn, including
-  the tool-calling step
+  the tool-calling step and the validator + retry loop
+
+**Advanced features (assignment requires 2):**
+- **Multi-turn context** — memory carries prior turns so later UI is
+  personalised to earlier ones.
+- **Validator + retry loop** — `_try_parse` validates against the schema; on
+  failure the exact error is fed back to the model for one retry, then falls
+  back. Lives in `main.py`'s `_run_turn`.
+- **Bonus — tool calling** — real market data via yfinance (`tools.py`).
 
 **Frontend:**
 - `a2ui/types.ts` — TypeScript mirror of `schema.py`, no `any` on core types
@@ -198,10 +208,9 @@ are backed by **real market data** rather than model-invented figures.
   is POST, so this reads the stream manually via `ReadableStream`)
 - `App.tsx` — chat shell with persistent message history, real session id,
   button/form actions looped back into `/chat` as the next turn
-
+  
 ## Roadmap
 
-- Validator + retry loop — a second model pass checks the A2UI JSON and feeds errors back for one retry before falling back.
 - Richer components — `select`, `data-table`, `badge`, inline charts.
 - Redis-backed memory for horizontal scale.
 - Partial-JSON streaming so the UI paints as the component arrives, not just
