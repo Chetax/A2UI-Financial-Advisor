@@ -190,7 +190,7 @@ rather than model-invented figures.
 - `main.py` — FastAPI SSE `/chat` endpoint wiring the full turn, including
   the tool-calling step and the validator + retry loop
 
-**Advanced features (assignment requires 2):**
+**Advanced features:**
 - **Multi-turn context** — memory carries prior turns so later UI is
   personalised to earlier ones.
 - **Validator + retry loop** — `_try_parse` validates against the schema; on
